@@ -115,6 +115,7 @@ export const loadGif = (url: string): Promise<Gif> =>
 export const loadImage = (url: string): Promise<ImageFrame> =>
     new Promise((resolve, reject) => {
         const img = new Image()
+        img.crossOrigin = ''
         img.addEventListener('load', () => {
             const width = img.naturalWidth
             const height = img.naturalHeight
@@ -126,6 +127,5 @@ export const loadImage = (url: string): Promise<ImageFrame> =>
             ctx.drawImage(img, 0, 0, width, height)
             resolve(new ImageFrame(url, canvas, width, height))
         }, false)
-
         img.src = url
     })

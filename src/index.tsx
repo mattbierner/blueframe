@@ -10,6 +10,7 @@ import { BlueGif, blueize } from "./blueizer";
 import { ScaleMode, scaleModes } from "./gif_renderer";
 import GifPicker from "./gif_picker";
 import ModeSelector from "./mode_selector";
+import { imageSets, ImageSet } from "./image_sets";
 
 interface ViewerState {
     gif: string
@@ -21,24 +22,25 @@ interface ViewerState {
     loadingGif: boolean
     scaleMode: ScaleMode
     exporting: boolean
+
+    imageSet: ImageSet
+
     error?: string
 }
 
-/**
- * Displays an interative scanlined gif with controls. 
- */
 class Viewer extends React.Component<null, ViewerState> {
     constructor(props: any) {
         super(props);
         this.state = {
             gif: 'https://media3.giphy.com/media/SEO7ub2q1fORa/giphy.gif',
-            blueImage: 'https://braddstudios.files.wordpress.com/2010/11/blue-velvet-0003.jpg',
+            blueImage: imageSets[0].getRandomImage(),
 
             gifImageData: null,
             blueImageData: null,
             blueGif: null,
 
             scaleMode: scaleModes[0],
+            imageSet: imageSets[0],
 
             loadingGif: false,
             exporting: false
@@ -46,22 +48,22 @@ class Viewer extends React.Component<null, ViewerState> {
     }
 
     componentDidMount() {
-        this.image_loader(this.state.gif, this.state.blueImage)
+        this.loadImage(this.state.gif, this.state.blueImage)
     }
 
-    private image_loader(leftGif: string, rightGif: string) {
+    private loadImage(gif: string, blueImage: string) {
         this.setState({ loadingGif: true })
 
-        Promise.all([
-            leftGif && this.state.gifImageData && this.state.gifImageData.source === leftGif
+        return Promise.all([
+            gif && this.state.gifImageData && this.state.gifImageData.source === gif
                 ? Promise.resolve(this.state.gifImageData)
-                : loadGif(leftGif),
-            rightGif && this.state.blueImageData && this.state.blueImageData.source === rightGif
+                : loadGif(gif),
+            blueImage && this.state.blueImageData && this.state.blueImageData.source === blueImage
                 ? Promise.resolve(this.state.blueImageData)
-                : loadImage(rightGif)
+                : loadImage(blueImage)
         ])
             .then(([leftData, rightData]) => {
-                if (leftGif !== this.state.gif || rightGif !== this.state.blueImage)
+                if (gif !== this.state.gif || blueImage !== this.state.blueImage)
                     return
 
                 this.setState({
@@ -74,7 +76,7 @@ class Viewer extends React.Component<null, ViewerState> {
                 })
             })
             .catch(e => {
-                if (leftGif !== this.state.gif || rightGif !== this.state.blueImage)
+                if (gif !== this.state.gif || blueImage !== this.state.blueImage)
                     return
 
                 console.error(e)
@@ -104,16 +106,22 @@ class Viewer extends React.Component<null, ViewerState> {
 
     private onGifSelected(src: string) {
         this.setState({ gif: src })
-        this.image_loader(src, this.state.blueImage)
+        this.loadImage(src, this.state.blueImage)
     }
 
-    public shuffle() {
+    private shuffle() {
         if (!this.state.blueGif)
             return
 
+        const newImage = imageSets[0].getRandomImage()
         this.setState({
-            blueGif: blueize(this.state.gifImageData, this.state.blueImageData)
+            blueImage: newImage
         })
+        this.loadImage(this.state.gif, newImage)
+    }
+
+    private onImageSetChange() {
+
     }
 
     render() {
@@ -125,11 +133,18 @@ class Viewer extends React.Component<null, ViewerState> {
                 <div className="view-controls">
                     <div className='gif-pickers'>
                         <GifPicker
-                            searchTitle='Primary Gif'
-                            label='primary'
+                            searchTitle='Gif'
+                            label='gif'
                             source={this.state.gif}
                             onGifSelected={(gif) => this.onGifSelected(gif)} />
                     </div>
+
+                    <ModeSelector
+                        title='Image Source'
+                        options={imageSets}
+                        value={this.state.imageSet}
+                        onChange={this.onImageSetChange.bind(this)} />
+
 
                     <ModeSelector
                         title='Scale Mode'
