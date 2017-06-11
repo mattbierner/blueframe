@@ -1,0 +1,15 @@
+title: "blueframe"
+
+description: "Splicing a single frame of pornography into a gif"
+
+# Build settings
+markdown: kramdown
+
+exclude: [
+    "documentation",
+    "node_modules",
+    "process_data",
+    "server",
+    "src",
+    "webpack.config.js"
+]

@@ -1,0 +1,64 @@
+
+#site-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    height: 260px;
+    padding-bottom: 4em;
+
+    #site-logo {
+        display: block;
+        margin: 0 2em;
+    }
+
+    .links a {
+        color: $light-gray;
+        padding: 0 0.6em;
+    }
+}
+
+@media only screen and (max-width: 1000px){
+    #site-header {
+        #site-title {
+            font-size: 42px;
+            letter-spacing: 16px;
+            margin-right: -16px;
+        }
+    }
+}
+
+@media only screen and (max-width: 700px),
+only screen and (max-height: 1000px) {
+    #site-header {
+        height: 200px;
+        padding-bottom: 1.6em;
+    }
+}
+
+@media only screen and (max-height: 600px) {
+    #site-header {
+        height: 140px;
+    }
+}
+
+@media only screen and (max-width: 700px) {
+    #site-header {
+        #site-title {
+            font-size: 32px;
+            letter-spacing: 12px;
+            margin-right: -16px;
+        }
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    #site-header {
+        #site-title {
+            font-size: 28px;
+            letter-spacing: 8px;
+            margin-right: -8px;
+        }
+    }
+}
