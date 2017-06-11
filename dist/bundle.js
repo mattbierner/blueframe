@@ -7714,10 +7714,10 @@ exports.actualSize = {
     description: 'Draw each gif centered in the canvas at the actual size'
 };
 exports.scaleModes = [exports.scaleToFit, exports.scaleAndCrop, exports.actualSize];
-function drawForOptions(canvas, context, gif, mode, state) {
+function drawForOptions(canvas, context, gif, mode, currentFrame) {
     canvas.width = gif.width;
     canvas.height = gif.height;
-    var frame = gif.frames[state.currentFrame];
+    var frame = gif.frames[currentFrame];
     if (mode === exports.scaleToFit) {
         context.drawImage(frame.canvas, 0, 0, canvas.width, canvas.height);
     }
@@ -7745,13 +7745,14 @@ var GifRenderer = (function (_super) {
     GifRenderer.prototype.componentDidMount = function () {
         this._canvas = ReactDOM.findDOMNode(this);
         this._ctx = this._canvas.getContext('2d');
+        this.drawGifForOptions(this.props.gif, this.props);
     };
     GifRenderer.prototype.componentWillReceiveProps = function (newProps) {
         this.drawGifForOptions(newProps.gif, newProps);
     };
-    GifRenderer.prototype.drawGifForOptions = function (imageData, state) {
+    GifRenderer.prototype.drawGifForOptions = function (imageData, props) {
         if (imageData) {
-            drawForOptions(this._canvas, this._ctx, imageData, this.props.scaleMode, state);
+            drawForOptions(this._canvas, this._ctx, imageData, props.scaleMode, props.currentFrame);
         }
     };
     GifRenderer.prototype.render = function () {
@@ -7760,7 +7761,6 @@ var GifRenderer = (function (_super) {
     return GifRenderer;
 }(React.Component));
 exports.default = GifRenderer;
-;
 
 
 /***/ }),
@@ -18781,32 +18781,6 @@ var labeled_slider_1 = __webpack_require__(124);
 var loading_spinner_1 = __webpack_require__(46);
 var gif_renderer_1 = __webpack_require__(45);
 var gif_properties_1 = __webpack_require__(122);
-var playbackSpeeds = {
-    '1x speed': 1,
-    '2x speed': 2,
-    '4x speed': 4,
-    '8x speed': 8,
-    '1/2 speed': 0.5,
-    '1/4 speed': 0.25,
-    '1/8 speed': 0.125,
-};
-/**
- * Select playback speed.
- */
-var SpeedSelector = (function (_super) {
-    __extends(SpeedSelector, _super);
-    function SpeedSelector() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    SpeedSelector.prototype.render = function () {
-        var options = Object.keys(playbackSpeeds).map(function (x) {
-            return React.createElement("option", { value: playbackSpeeds[x], key: x }, x);
-        });
-        return (React.createElement("div", { className: 'playback-speed-selector' },
-            React.createElement("select", { value: this.props.value, onChange: this.props.onChange }, options)));
-    };
-    return SpeedSelector;
-}(React.Component));
 /**
  * Playback controls for scanlined gif.
  */
@@ -18817,8 +18791,7 @@ var GifPlayer = (function (_super) {
         _this.state = {
             currentFrame: 0,
             playing: false,
-            loop: true,
-            playbackSpeed: 1
+            loop: true
         };
         return _this;
     }
@@ -18856,7 +18829,7 @@ var GifPlayer = (function (_super) {
                 return;
             }
             nextFrame %= _this.getNumFrames();
-            var interval = ((_this.props.blueGif.frames[nextFrame].delay || 1) * 10) / _this.state.playbackSpeed;
+            var interval = ((_this.props.blueGif.frames[nextFrame].delay || 1) * 10);
             var elapsed = (Date.now() - start);
             var next = Math.max(0, interval - (elapsed - delay));
             _this.setState({
@@ -18872,9 +18845,17 @@ var GifPlayer = (function (_super) {
     GifPlayer.prototype.onReplay = function () {
         this.setState({ currentFrame: 0 });
     };
-    GifPlayer.prototype.onPlaybackSpeedChange = function (e) {
-        var value = +e.target.value;
-        this.setState({ playbackSpeed: value });
+    GifPlayer.prototype.nextFrame = function () {
+        this.setState({
+            currentFrame: (this.state.currentFrame + 1) % this.props.blueGif.frames.length
+        });
+    };
+    GifPlayer.prototype.previousFrame = function () {
+        this.setState({
+            currentFrame: this.state.currentFrame - 1 < 0
+                ? this.props.blueGif.frames.length - 1
+                : (this.state.currentFrame - 1) % this.props.blueGif.frames.length
+        });
     };
     GifPlayer.prototype.render = function () {
         return (React.createElement("div", { className: "gif-figure" },
@@ -18888,12 +18869,12 @@ var GifPlayer = (function (_super) {
                 React.createElement("div", { className: "buttons" },
                     React.createElement("button", { title: "Restart", className: "material-icons", onClick: this.onReplay.bind(this) }, "replay"),
                     React.createElement("button", { className: "material-icons", onClick: this.onToggle.bind(this) }, this.state.playing ? 'pause' : 'play_arrow'),
-                    React.createElement(SpeedSelector, { value: this.state.playbackSpeed, onChange: this.onPlaybackSpeedChange.bind(this) })))));
+                    React.createElement("button", { className: "material-icons", onClick: this.previousFrame.bind(this) }, "skip_previous"),
+                    React.createElement("button", { className: "material-icons", onClick: this.nextFrame.bind(this) }, "skip_next")))));
     };
     return GifPlayer;
 }(React.Component));
 exports.default = GifPlayer;
-;
 
 
 /***/ }),
@@ -19005,10 +18986,13 @@ var extractGifFrameData = function (reader) {
 exports.loadGif = function (url) {
     return loadBinaryData(url).then(function (data) { return decodeGif(data, url); });
 };
-exports.loadImage = function (url) {
+exports.loadImage = function (url, coors) {
+    if (coors === void 0) { coors = false; }
     return new Promise(function (resolve, reject) {
         var img = new Image();
-        img.crossOrigin = '';
+        if (coors) {
+            img.crossOrigin = '';
+        }
         img.addEventListener('load', function () {
             var width = img.naturalWidth;
             var height = img.naturalHeight;
@@ -19048,6 +19032,18 @@ var data = [
             "Vintage-Erotica-0675.jpg", "Vintage-Erotica-0676.jpg", "Vintage-Erotica-0677.jpg", "Vintage-Erotica-0678.jpg", "Vintage-Erotica-0679.jpg", "Vintage-Erotica-0680.jpg", "Vintage-Erotica-0681.jpg", "Vintage-Erotica-0682.jpg", "Vintage-Erotica-0683.jpg", "Vintage-Erotica-0684.jpg", "Vintage-Erotica-0685.jpg", "Vintage-Erotica-0686.jpg", "Vintage-Erotica-0687.jpg", "Vintage-Erotica-0688.jpg", "Vintage-Erotica-0689.jpg", "Vintage-Erotica-0690.jpg", "Vintage-Erotica-0691.jpg", "Vintage-Erotica-0692.jpg", "Vintage-Erotica-0693.jpg", "Vintage-Erotica-0694.jpg", "Vintage-Erotica-0695.jpg", "Vintage-Erotica-0696.jpg", "Vintage-Erotica-0697.jpg", "Vintage-Erotica-0698.jpg", "Vintage-Erotica-0699.jpg", "Vintage-Erotica-0700.jpg", "Vintage-Erotica-0701.jpg", "Vintage-Erotica-0702.jpg", "Vintage-Erotica-0704.jpg", "Vintage-Erotica-0705.jpg", "Vintage-Erotica-0706.jpg", "Vintage-Erotica-0707.jpg", "Vintage-Erotica-0708.jpg", "Vintage-Erotica-0709.jpg", "Vintage-Erotica-0710.jpg", "Vintage-Erotica-0711.jpg", "Vintage-Erotica-0712.jpg", "Vintage-Erotica-0713.jpg", "Vintage-Erotica-0714.jpg", "Vintage-Erotica-0715.jpg", "Vintage-Erotica-0716.jpg", "Vintage-Erotica-0717.jpg", "Vintage-Erotica-0718.jpg", "Vintage-Erotica-0719.jpg", "Vintage-Erotica-0720.jpg", "Vintage-Erotica-0721.jpg", "Vintage-Erotica-0722.jpg", "Vintage-Erotica-0723.jpg", "Vintage-Erotica-0724.jpg", "Vintage-Erotica-0725.jpg", "Vintage-Erotica-0726.jpg", "Vintage-Erotica-0727.jpg", "Vintage-Erotica-0728.jpg", "Vintage-Erotica-0729.jpg", "Vintage-Erotica-0730.jpg", "Vintage-Erotica-0731.jpg",
             "Vintage-Erotica-0760.jpg", "Vintage-Erotica-0761.jpg", "Vintage-Erotica-0762.jpg", "Vintage-Erotica-0763.jpg", "Vintage-Erotica-0764.jpg", "Vintage-Erotica-0765.jpg", "Vintage-Erotica-0766.jpg", "Vintage-Erotica-0767.jpg", "Vintage-Erotica-0768.jpg", "Vintage-Erotica-0769.jpg", "Vintage-Erotica-0770.jpg", "Vintage-Erotica-0771.jpg", "Vintage-Erotica-0772.jpg", "Vintage-Erotica-0773.jpg", "Vintage-Erotica-0774.jpg", "Vintage-Erotica-0775.jpg", "Vintage-Erotica-0776.jpg", "Vintage-Erotica-0777.JPG", "Vintage-Erotica-0778.jpg", "Vintage-Erotica-0779.jpg", "Vintage-Erotica-0780.jpg", "Vintage-Erotica-0781.jpg", "Vintage-Erotica-0782.jpg", "Vintage-Erotica-0783.jpg", "Vintage-Erotica-0784.jpg", "Vintage-Erotica-0785.jpg", "Vintage-Erotica-0786.jpg", "Vintage-Erotica-0787.jpg", "Vintage-Erotica-0788.jpg", "Vintage-Erotica-0789.jpg", "Vintage-Erotica-0790.jpg", "Vintage-Erotica-0791.jpg", "Vintage-Erotica-0792.jpg", "Vintage-Erotica-0793.JPG", "Vintage-Erotica-0794.jpg", "Vintage-Erotica-0795.jpg", "Vintage-Erotica-0796.jpg", "Vintage-Erotica-0797.jpg", "Vintage-Erotica-0798.jpg", "Vintage-Erotica-0799.jpg", "Vintage-Erotica-0800.jpg", "Vintage-Erotica-0801.jpg", "Vintage-Erotica-0802.jpg", "Vintage-Erotica-0803.jpg", "Vintage-Erotica-0804.jpg", "Vintage-Erotica-0805.jpg", "Vintage-Erotica-0806.jpg", "Vintage-Erotica-0807.jpg", "Vintage-Erotica-0808.jpg", "Vintage-Erotica-0809.jpg", "Vintage-Erotica-0810.jpg", "Vintage-Erotica-0811.jpg", "Vintage-Erotica-0812.jpg", "Vintage-Erotica-0813.jpg", "Vintage-Erotica-0814.jpg", "Vintage-Erotica-0815.jpg"
         ]
+    },
+    {
+        name: "Playboy centerfolds",
+        description: "Playboy centerfolds",
+        baseUrl: 'https://erotixx.files.wordpress.com/',
+        images: [
+            "2011/04/1953-12-01marilynmonroe1.jpg", "2011/04/1953-12-01marilynmonroe2.jpg", "2011/04/1954-01-01margieharrison.jpg", "2011/04/1954-01-01margieharrison1.jpg", "2011/04/1954-02-01margaretscott.jpg", "2011/04/1954-02-01margaretscott1.jpg", "2011/04/1954-03-01doloresdelmonte.jpg", "2011/04/1954-03-01doloresdelmonte1.jpg", "2011/04/1954-04-01marilynwaltz.jpg", "2011/04/1954-05-01joannearnold.jpg", "2011/04/1954-06-01margieharrison.jpg", "2011/04/1954-07-01nevagilbert.jpg", "2011/04/1954-07-01nevagilbert1.jpg", "2011/04/1954-08-01arlinehunter.jpg", "2011/04/1954-09-01jackierainbow.jpg", "2011/04/1954-10-01madelinecastle.jpg", "2011/04/1954-11-01dianehunter.jpg", "2011/04/1954-12-01terryryan.jpg", "2011/04/1955-01-01bettiepage.jpg", "2011/04/1955-02-01jaynemansfield.jpg", "2011/04/1955-03-01noplaymatethismonth.jpg", "2011/04/1955-04-01marilynwaltz.jpg", "2011/04/1955-05-01margueriteempey.jpg", "2011/04/1955-06-01evemeyer.jpg", "2011/04/1955-07-01janetpilgrim.jpg", "2011/04/1955-08-01patlawler.jpg", "2011/04/1955-09-01annefleming.jpg", "2011/04/1955-10-01jeanmoorehead.jpg", "2011/04/1955-11-01barbaracameron.jpg", "2011/04/1955-12-01janetpilgrim.jpg", "2011/04/1956-01-01lynnturner.jpg", "2011/04/1956-02-01margueriteempey.jpg", "2011/04/1956-03-01marianstafford.jpg", "2011/04/1956-04-01rustyfisher.jpg", "2011/04/1956-05-01marionscott.jpg", "2011/04/1956-06-01gloriawalker.jpg", "2011/04/1956-07-01alicedenham.jpg", "2011/04/1956-08-01jonnienicely.jpg", "2011/04/1956-09-01elsasorensen.jpg", "2011/04/1956-10-01janetpilgrim.jpg", "2011/04/1956-11-01bettyblue.jpg", "2011/04/1956-12-01lisawinters.jpg", "2011/04/1957-01-01juneblair.jpg", "2011/04/1957-02-01sallytodd.jpg", "2011/04/1957-03-01sandraedwards.jpg", "2011/04/1957-04-01gloriawindsor.jpg", "2011/04/1957-05-01dawnrichard.jpg", "2011/04/1957-06-01carrieradison.jpg", "2011/04/1957-07-01jeanjani.jpg", "2011/04/1957-08-01doloresdonlon.jpg", "2011/04/1957-09-01jacquelynprescott.jpg", "2011/04/1957-10-01colleenfarrington.jpg", "2011/04/1957-11-01marlenecallahan.jpg", "2011/04/1957-12-01lindavargas.jpg", "2011/04/1958-01-01elizabethannroberts.jpg", "2011/04/1958-02-01cherylkubert.jpg", "2011/04/1958-03-01zahranorbo.jpg", "2011/04/1958-04-01feliciaatkins.jpg", "2011/04/1958-05-01larilaine.jpg", "2011/04/1958-06-01judyleetomerlin.jpg", "2011/04/1958-07-01linnnanneteahlstrand.jpg", "2011/04/1958-08-01myrnaweber.jpg", "2011/04/1958-09-01terihope.jpg", "2011/04/1958-10-01maracorday.jpg", "2011/04/1958-10-15patsheehan.jpg", "2011/04/1958-11-01joanstaley.jpg", "2011/04/1958-12-01joycenizzari.jpg", "2011/04/1959-01-01virginiagordon.jpg", "2011/04/1959-02-01eleanorbradley.jpg", "2011/04/1959-03-01audreydaston.jpg", "2011/04/1959-04-01nancycrawford.jpg", "2011/04/1959-05-01cindyfuller.jpg", "2011/04/1959-06-01marilynhanold.jpg", "2011/04/1959-07-01yvettevickers.jpg", "2011/04/1959-08-01clayrepeters.jpg", "2011/04/1959-09-01mariannegaba.jpg", "2011/04/1959-10-01elainereynolds.jpg", "2011/04/1959-11-01donnalynn.jpg", "2011/04/1959-12-01ellenstratton.jpg",
+            "2011/04/1960-01-01stellastevens.jpg", "2011/04/1960-02-01susiescott.jpg", "2011/04/1960-03-01sallysarell.jpg", "2011/04/1960-04-01lindagamble.jpg", "2011/04/1960-05-01gingeryoung.jpg", "2011/04/1960-06-01deloreswells.jpg", "2011/04/1960-07-01teddismith.jpg", "2011/04/1960-08-01elainepaul.jpg", "2011/04/1960-09-01anndavis.jpg", "2011/04/1960-10-01kathydouglas.jpg", "2011/04/1960-11-01jonimattis.jpg", "2011/04/1960-12-01caroleden.jpg", "2011/04/1961-01-01conniecooper.jpg", "2011/04/1961-02-01barbaraannlawford.jpg", "2011/04/1961-03-01tonyacrews.jpg", "2011/04/1961-04-01nancynielsen.jpg", "2011/04/1961-05-01susankelly.jpg", "2011/04/1961-06-01heidibecker.jpg", "2011/04/1961-07-01sheraleeconners.jpg", "2011/04/1961-08-01karenthompson.jpg", "2011/04/1961-09-01christaspeck.jpg", "2011/04/1961-10-01jeancannon.jpg", "2011/04/1961-11-01diannedanford.jpg", "2011/04/1961-12-01lynnkarrol.jpg", "2011/04/1962-01-01merlepertile.jpg", "2011/04/1962-02-01kariknudsen.jpg", "2011/04/1962-03-01pamelaannegordon.jpg", "2011/04/1962-04-01robertalane.jpg", "2011/04/1962-05-01maryacarter.jpg", "2011/04/1962-06-01merissamathes.jpg", "2011/04/1962-07-01unneterjesen.jpg", "2011/04/1962-08-01janroberts.jpg", "2011/04/1962-09-01mickeywinters.jpg", "2011/04/1962-10-01laurayoung.jpg", "2011/04/1962-11-01aviskimble.jpg", "2011/04/1962-12-01junecochran.jpg", "2011/04/1963-01-01judimonterey.jpg", "2011/04/1963-02-01toniannthomas.jpg", "2011/04/1963-03-01adriennemoreau.jpg", "2011/04/1963-04-01sandrasettani.jpg", "2011/04/1963-05-01sharoncintron.jpg", "2011/04/1963-06-01conniemason.jpg", "2011/04/1963-07-01carrieenwright.jpg", "2011/04/1963-08-01phyllissherwood.jpg", "2011/04/1963-09-01victoriavalentino.jpg", "2011/04/1963-10-01christinewilliams.jpg", "2011/04/1963-11-01terretucker.jpg", "2011/04/1963-12-01donnamichelle.jpg", "2011/04/1964-01-01sharonrogers.jpg", "2011/04/1964-02-01nancyjohooper.jpg", "2011/04/1964-03-01nancyscott.jpg", "2011/04/1964-04-01ashlynmartin.jpg", "2011/04/1964-05-01terrikimball.jpg", "2011/04/1964-06-01loriwinston.jpg", "2011/04/1964-07-01melbaogle.jpg", "2011/04/1964-08-01chinalee.jpg", "2011/04/1964-09-01astridschulz.jpg", "2011/04/1964-10-01rosemariehillcrest.jpg", "2011/04/1964-11-01kaibrendlinger.jpg", "2011/04/1964-12-01jocollins.jpg", "2011/04/1965-01-01sallyduberson.jpg", "2011/04/1965-02-01jessicast-george.jpg", "2011/04/1965-03-01jenniferjackson.jpg", "2011/04/1965-04-01suewilliams.jpg", "2011/04/1965-05-01mariamcbane.jpg", "2011/04/1965-06-01hedyscott.jpg", "2011/04/1965-07-01gaycollier.jpg", "2011/04/1965-08-01lanniebalcom.jpg", "2011/04/1965-09-01pattireynolds.jpg", "2011/04/1965-10-01allisonparks.jpg", "2011/04/1965-11-01patrusso.jpg", "2011/04/1965-12-01dinahwillis.jpg", "2011/04/1966-01-01judytyler.jpg", "2011/04/1966-02-01melindawindsor.jpg", "2011/04/1966-03-01priscillawright.jpg", "2011/04/1966-04-01karlaconway.jpg", "2011/04/1966-05-01dollyread.jpg", "2011/04/1966-06-01kellyburke.jpg", "2011/04/1966-07-01tishhoward.jpg", "2011/04/1966-08-01susandenberg.jpg", "2011/04/1966-09-01diannechandler.jpg", "2011/04/1966-10-01lindamoon.jpg", "2011/04/1966-11-01lisabaker.jpg", "2011/04/1966-12-01susanbernard.jpg", "2011/04/1967-01-01surreymarshe.jpg", "2011/04/1967-02-01kimfarber.jpg", "2011/04/1967-03-01frangerard.jpg", "2011/04/1967-04-01gwenwong.jpg", "2011/04/1967-05-01annerandall.jpg", "2011/04/1967-06-01joeygibson.jpg", "2011/04/1967-07-01heatherryan.jpg", "2011/04/1967-08-01dedelind.jpg", "2011/04/1967-09-01angeladorian.jpg", "2011/04/1967-12-01lynnwinchell.jpg", "2011/04/1968-01-01conniekreski.jpg", "2011/04/1968-02-01nancyharwood.jpg", "2011/04/1968-03-01michellehamilton.jpg", "2011/04/1968-04-01gayerennie.jpg", "2011/04/1968-05-01elizabethjordan.jpg", "2011/04/1968-06-01brittfredriksen.jpg", "2011/04/1968-07-01melodyeprentiss.jpg", "2011/04/1968-08-01galeolson.jpg", "2011/04/1968-09-01druhart.jpg", "2011/04/1968-10-01majkenhaugedal.jpg", "2011/04/1968-11-01paigeyoung.jpg", "2011/04/1968-12-01cynthiamyers.jpg", "2011/04/1969-01-01lesliebianchini.jpg", "2011/04/1969-02-01lorriemenconi.jpg", "2011/04/1969-03-01kathymacdonald.jpg", "2011/04/1969-04-01lornahopper.jpg", "2011/04/1969-05-01sallysheffield.jpg", "2011/04/1969-06-01helenaantonaccio.jpg", "2011/04/1969-07-01nancymcneil.jpg", "2011/04/1969-08-01debbiehooper.jpg", "2011/04/1969-09-01shayknuth.jpg", "2011/04/1969-10-01jeanbell.jpg", "2011/04/1969-11-01claudiajennings.jpg", "2011/04/1969-12-01gloriaroot.jpg",
+            "2011/04/1970-01-01jilltaylor.jpg", "2011/04/1970-02-01lindaforsythe.jpg", "2011/04/1970-03-01chriskoren.jpg", "2011/04/1970-04-01barbarahillary.jpg", "2011/04/1970-05-01jenniferliano.jpg", "2011/04/1970-06-01elainemorton.jpg", "2011/04/1970-07-01carolwillis.jpg", "2011/04/1970-08-01sharonclark.jpg", "2011/04/1970-09-01debbieellison.jpg", "2011/04/1970-10-01madeleineandmarycollinson.jpg", "2011/04/1970-11-01avismiller.jpg", "2011/04/1970-12-01carolimhof.jpg", "2011/04/1971-01-01livlindeland.jpg", "2011/04/1971-02-01willyrey.jpg", "2011/04/1971-03-01cynthiahall.jpg", "2011/04/1971-04-01chriscranston.jpg", "2011/04/1971-05-01janicepennington.jpg", "2011/04/1971-06-01liekoenglish.jpg", "2011/04/1971-07-01heathervanevery.jpg", "2011/04/1971-08-01cathyrowland.jpg", "2011/04/1971-09-01crystalsmith.jpg", "2011/04/1971-10-01clairerambeau.jpg", "2011/04/1971-11-01danielledevabre.jpg", "2011/04/1971-12-01karenchristy.jpg", "2011/04/1972-01-01marilyncole.jpg", "2011/04/1972-02-01p-j-lansing.jpg", "2011/04/1972-03-01ellenmichaels2.jpg", "2011/04/1972-03-01ellenmichaels3.jpg", "2011/04/1972-04-01vickipeters2.jpg", "2011/04/1972-04-01vickipeters3.jpg", "2011/04/1972-05-01deannabaker2.jpg", "2011/04/1972-05-01deannabaker3.jpg", "2011/04/1972-06-01debbiedavis2.jpg", "2011/04/1972-06-01debbiedavis3.jpg", "2011/04/1972-07-01caroloneal.jpg", "2011/04/1972-08-01lindasummers.jpg", "2011/04/1972-09-01susanmiller.jpg", "2011/04/1972-10-01sharonjohansen.jpg", "2011/04/1972-11-01lennasjblom.jpg", "2011/04/1972-12-01mercyrooney.jpg", "2011/04/1973-01-01mikigarcia.jpg", "2011/04/1973-02-01cyndiwood.jpg", "2011/04/1973-03-01bonnielarge.jpg", "2011/04/1973-04-01juliewoodson.jpg", "2011/04/1973-05-01anulkadziubinska.jpg", "2011/04/1973-06-01ruthyross.jpg", "2011/04/1973-07-01marthasmith.jpg", "2011/04/1973-08-01phylliscoleman.jpg", "2011/04/1973-09-01geriglass.jpg", "2011/04/1973-10-01valerielane.jpg", "2011/04/1973-11-01monicatidwell.jpg", "2011/04/1973-12-01christinemaddox.jpg", "2011/04/1974-01-01nancycameron.jpg", "2011/04/1974-02-01francineparks.jpg", "2011/04/1974-03-01pamelazinszer.jpg", "2011/04/1974-04-01marlenemorrow.jpg", "2011/04/1974-05-01marilynlange.jpg", "2011/04/1974-06-01sandyjohnson.jpg", "2011/04/1974-07-01carolvitale.jpg", "2011/04/1974-08-01jeanmanson.jpg", "2011/04/1974-09-01kristinehanson.jpg", "2011/04/1974-10-01estercordet.jpg", "2011/04/1974-11-01bebebuell.jpg", "2011/04/1974-12-01janiceraymond.jpg", "2011/04/1975-01-01lynndakimball.jpg", "2011/04/1975-02-01lauramisch.jpg", "2011/04/1975-03-01ingeborgsorensen.jpg", "2011/04/1975-04-01victoriacunningham.jpg", "2011/04/1975-05-01bridgettrollins.jpg", "2011/04/1975-06-01azizijohari.jpg", "2011/04/1975-07-01lynnschiller.jpg", "2011/04/1975-08-01lillianmller.jpg", "2011/04/1975-09-01mesinamiller.jpg", "2011/04/1975-10-01jilldevries.jpg", "2011/04/1975-11-01janetlupo.jpg", "2011/04/1975-12-01nancielibrandi.jpg", "2011/04/1976-01-01dainahouse.jpg", "2011/04/1976-02-01lauralyons.jpg", "2011/04/1976-03-01annpennington.jpg", "2011/04/1976-04-01denisemichele.jpg", "2011/04/1976-05-01patriciamargotmcclain.jpg", "2011/04/1976-06-01debrapeterson.jpg", "2011/04/1976-07-01deborahborkman.jpg", "2011/04/1976-08-01lindabeatty.jpg", "2011/04/1976-09-01whitneykaine.jpg", "2011/04/1976-10-01hopeolson.jpg", "2011/04/1976-11-01pattimcguire.jpg", "2011/04/1976-12-01karenhafter.jpg", "2011/04/1977-01-01susanlynnkiger.jpg", "2011/04/1977-02-01starstowe.jpg", "2011/04/1977-03-01nickithomas.jpg", "2011/04/1977-04-01lisasohm.jpg", "2011/04/1977-05-01sheilamullen.jpg", "2011/04/1977-06-01virvereid.jpg", "2011/04/1977-07-01sondratheodore.jpg", "2011/04/1977-08-01julialyndon.jpg", "2011/04/1977-09-01debrajofondren.jpg", "2011/04/1977-10-01kristinewinder.jpg", "2011/04/1977-11-01ritalee.jpg", "2011/04/1977-12-01ashleycox.jpg", "2011/04/1978-01-01debrajensen.jpg", "2011/04/1978-02-01janisschmitt.jpg", "2011/04/1978-03-01christinasmith.jpg", "2011/04/1978-04-01pamelajeanbryant.jpg", "2011/04/1978-05-01kathrynmorrison.jpg", "2011/04/1978-06-01gailstanton.jpg", "2011/04/1978-07-01karenelainemorton.jpg", "2011/04/1978-08-01vickiwitt.jpg", "2011/04/1978-09-01rosannekaton.jpg", "2011/04/1978-10-01marcyhanson.jpg", "2011/04/1978-11-01moniquest-pierre.jpg", "2011/04/1978-12-01janetquist.jpg", "2011/04/1979-01-01candyloving.jpg", "2011/04/1979-02-01leeannmichelle.jpg", "2011/04/1979-03-01denisemcconnell.jpg", "2011/04/1979-04-01missycleveland.jpg", "2011/04/1979-05-01micheledrake.jpg", "2011/04/1979-06-01louannfernald.jpg", "2011/04/1979-07-01dorothymays.jpg", "2011/04/1979-08-01dorothystratten.jpg", "2011/04/1979-09-01vickimccarty.jpg", "2011/04/1979-10-01ursulabuchfellner.jpg", "2011/04/1979-11-01sylviegarant.jpg", "2011/04/1979-12-01candacecollins.jpg",
+            "2011/04/1980-01-01giggangel.jpg", "2011/04/1980-02-01sandycagle.jpg", "2011/04/1980-03-01henrietteallais.jpg", "2011/04/1980-04-01lizglazowski.jpg", "2011/04/1980-05-01marthaelizabeththomsen.jpg", "2011/04/1980-06-01olaray.jpg", "2011/04/1980-07-01teripeterson.jpg", "2011/04/1980-08-01victoriacooke.jpg", "2011/04/1980-09-01lisawelch.jpg", "2011/04/1980-10-01mardijacquet.jpg", "2011/04/1980-11-01jeanatomasino.jpg", "2011/04/1980-12-01terriwelles.jpg", "2011/04/1981-01-01karenelainaprice.jpg", "2011/04/1981-02-01vickilynnlasseter.jpg", "2011/04/1981-03-01kymberlyherrin.jpg", "2011/04/1981-04-01lorrainemichaels.jpg", "2011/04/1981-05-01ginagoldberg.jpg", "2011/04/1981-06-01cathylarmouth.jpg", "2011/04/1981-07-01heidisorenson.jpg", "2011/04/1981-08-01debbieboostrom.jpg", "2011/04/1981-09-01susansmith.jpg", "2011/04/1981-10-01kellytough.jpg", "2011/04/1981-11-01shannonleetweed.jpg", "2011/04/1981-12-01patriciafarinelli.jpg", "2011/04/1982-01-01kimberlymcarthur.jpg", "2011/04/1982-02-01annemariefox.jpg", "2011/04/1982-03-01karenwitter.jpg", "2011/04/1982-04-01lindarhysvaughn.jpg", "2011/04/1982-05-01kymmalin.jpg", "2011/04/1982-06-01lourdesannkananimanuestores.jpg", "2011/04/1982-07-01lyndawiesmeier.jpg", "2011/04/1982-08-01cathyst-george.jpg", "2011/04/1982-09-01conniebrighton.jpg", "2011/04/1982-10-01mariannegravatte.jpg", "2011/04/1982-11-01marlenejanssen.jpg", "2011/04/1982-12-01charlottekemp.jpg", "2011/04/1983-01-01lonnychin.jpg", "2011/04/1983-02-01melindamays.jpg", "2011/04/1983-03-01alanasoares.jpg", "2011/04/1983-04-01christinaferguson.jpg", "2011/04/1983-05-01susiescott.jpg", "2011/04/1983-06-01jolandaegger.jpg", "2011/04/1983-07-01ruthguerri.jpg", "2011/04/1983-08-01carinapersson.jpg", "2011/04/1983-09-01barbaraedwards.jpg", "2011/04/1983-10-01tracyvaccaro.jpg", "2011/04/1983-11-01veronicagamba.jpg", "2011/04/1983-12-01terrynihen.jpg", "2011/04/1984-01-01pennybaker.jpg", "2011/04/1984-02-01justinegreiner.jpg", "2011/04/1984-03-01donaspeir.jpg", "2011/04/1984-04-01lesaannpedriana.jpg", "2011/04/1984-05-01pattyduffek.jpg", "2011/04/1984-06-01tricialange.jpg", "2011/04/1984-07-01lizstewart.jpg", "2011/04/1984-08-01suzischott.jpg", "2011/04/1984-09-01kimberlyevenson.jpg", "2011/04/1984-10-01debijohnson.jpg", "2011/04/1984-11-01robertavasquez.jpg", "2011/04/1984-12-01karenvelez.jpg", "2011/04/1985-01-01joanbennett.jpg", "2011/04/1985-02-01cheriewitter.jpg", "2011/04/1985-03-01donnasmith.jpg", "2011/04/1985-04-01cindybrooks.jpg", "2011/04/1985-05-01kathyshower.jpg", "2011/04/1985-06-01devindevasquez.jpg", "2011/04/1985-07-01hopemariecarlton.jpg", "2011/04/1985-08-01cherbutler.jpg", "2011/04/1985-09-01venicekong.jpg", "2011/04/1985-10-01cynthiabrimhall.jpg", "2011/04/1985-11-01pamelasaunders.jpg", "2011/04/1985-12-01carolficatier.jpg", "2011/04/1986-01-01sherryarnett.jpg", "2011/04/1986-02-01juliemichellemccullough.jpg", "2011/04/1986-03-01kimmorris.jpg", "2011/04/1986-04-01teriweigel.jpg", "2011/04/1986-05-01christinerichters.jpg", "2011/04/1986-06-01rebeccaferratti.jpg", "2011/04/1986-07-01lynneaustin.jpg", "2011/04/1986-08-01avafabian.jpg", "2011/04/1986-09-01rebekkaarmstrong.jpg", "2011/04/1986-10-01katherinehushaw.jpg", "2011/04/1986-11-01donnaedmondson.jpg", "2011/04/1986-12-01lauriecarr.jpg", "2011/04/1987-01-01luannlee.jpg", "2011/04/1987-02-01juliepeterson.jpg", "2011/04/1987-03-01marinabaker.jpg", "2011/04/1987-04-01annaclark.jpg", "2011/04/1987-05-01kymberlypaige.jpg", "2011/04/1987-06-01sandygreenberg.jpg", "2011/04/1987-07-01carmenberg.jpg", "2011/04/1987-08-01sharrykonopski.jpg", "2011/04/1987-09-01gwenhajek.jpg", "2011/04/1987-10-01brandibrandt.jpg", "2011/04/1987-11-01pamstein.jpg", "2011/04/1987-12-01indiaallen.jpg", "2011/04/1988-01-01kimberleyconrad.jpg", "2011/04/1988-02-01karikennell.jpg", "2011/04/1988-03-01susieowens.jpg", "2011/04/1988-04-01eloisebroady.jpg", "2011/04/1988-05-01dianalee.jpg", "2011/04/1988-06-01emilyarth.jpg", "2011/04/1988-07-01terrilynndoss.jpg", "2011/04/1988-08-01hellemichaelsen.jpg", "2011/04/1988-09-01laurarichmond.jpg", "2011/04/1988-10-01shannonlong.jpg", "2011/04/1988-11-01piareyes.jpg", "2011/04/1988-12-01katakrkkinen.jpg", "2011/04/1989-01-01fawnamaclaren.jpg", "2011/04/1989-02-01simonefleuriceeden.jpg", "2011/04/1989-04-01jenniferlynjackson.jpg", "2011/04/1989-05-01moniquenoel.jpg", "2011/04/1989-06-01tawnnicable.jpg", "2011/04/1989-07-01erikaeleniak.jpg", "2011/04/1989-08-01giannaamore.jpg", "2011/04/1989-09-01karinandmirjamvanbreeschooten.jpg", "2011/04/1989-10-01karenfoster.jpg", "2011/04/1989-11-01renetenison.jpg", "2011/04/1989-12-01petraverkaik.jpg",
+            "2011/04/1990-01-01peggymcintaggart.jpg", "2011/04/1990-02-01pamelaanderson.jpg", "2011/04/1990-03-01deborahdriggs.jpg", "2011/04/1990-04-01lisamatthews.jpg", "2011/04/1990-05-01tinabockrath.jpg", "2011/04/1990-06-01bonniemarino.jpg", "2011/04/1990-07-01jacquelinesheen.jpg", "2011/04/1990-08-01melissaevridge.jpg", "2011/04/1990-09-01kerrikendall.jpg", "2011/04/1990-10-01brittanyyork.jpg", "2011/04/1990-11-01lorraineolivia.jpg", "2011/04/1990-12-01morganfox.jpg", "2011/04/1991-01-01stacyleigharthur.jpg", "2011/04/1991-02-01cristythom.jpg", "2011/04/1991-03-01julieanneclarke.jpg", "2011/04/1991-04-01christinamarieleardini.jpg", "2011/04/1991-05-01carriejeanyazel.jpg", "2011/04/1991-06-01saskialinssen.jpg", "2011/04/1991-07-01wendykaye.jpg", "2011/04/1991-08-01corinnaharney.jpg", "2011/04/1991-09-01samanthadorman.jpg", "2011/04/1991-10-01cherylbachman.jpg", "2011/04/1991-11-01tonjachristensen.jpg", "2011/04/1991-12-01wendyhamilton.jpg", "2011/04/1992-01-01suzisimpson.jpg", "2011/04/1992-02-01tanyabeyer.jpg", "2011/04/1992-03-01tylynjohn.jpg", "2011/04/1992-04-01cadycantrell.jpg", "2011/04/1992-05-01vickieannanicolesmith.jpg", "2011/04/1992-06-01angelamelini.jpg", "2011/04/1992-07-01amandahope.jpg", "2011/04/1992-08-01ashleyallen.jpg", "2011/04/1992-09-01morenacorwin.jpg", "2011/04/1992-10-01tiffanym-sloan_.jpg", "2011/04/1992-11-01stephanieadams.jpg", "2011/04/1992-12-01barbaramoore.jpg", "2011/04/1993-01-01echoletajohnson.jpg", "2011/04/1993-02-01jenniferleroy.jpg", "2011/04/1993-03-01kimberlydonley.jpg", "2011/04/1993-04-01nicolewood.jpg", "2011/04/1993-05-01elkejeinsen.jpg", "2011/04/1993-06-01alesham-oreskovich.jpg", "2011/04/1993-07-01leisasheridan.jpg", "2011/04/1993-08-01jenniferj-lavoie.jpg", "2011/04/1993-09-01carriewestcott.jpg", "2011/04/1993-10-01jennymccarthy.jpg", "2011/04/1993-11-01juliannayoung.jpg", "2011/04/1993-12-01arlenebaxter.jpg", "2011/04/1994-01-01annamariegoddard.jpg", "2011/04/1994-02-01julielynncialini.jpg", "2011/04/1994-03-01neriahdavis.jpg", "2011/04/1994-04-01beckydelossantos.jpg", "2011/04/1994-05-01shaemarks.jpg", "2011/04/1994-06-01elancarter.jpg", "2011/04/1994-07-01traciadell.jpg", "2011/04/1994-08-01mariacheca.jpg", "2011/04/1994-09-01kellygallagher.jpg", "2011/04/1994-10-01victorianikazdrok.jpg", "2011/04/1994-11-01donnaperry.jpg", "2011/04/1994-12-01elisabridges.jpg", "2011/04/1995-01-01melissadeanneholliday.jpg", "2011/04/1995-02-01lisamariescott.jpg", "2011/04/1995-03-01stacysanches.jpg", "2011/04/1995-04-01danellemariefolta.jpg", "2011/04/1995-05-01cynthiagwynbrown.jpg", "2011/04/1995-06-01rhondaadams.jpg", "2011/04/1995-07-01heidimark.jpg", "2011/04/1995-08-01racheljenmarteen.jpg", "2011/04/1995-09-01donnaderrico.jpg", "2011/04/1995-10-01aliciarickter.jpg", "2011/04/1995-11-01hollywitt.jpg", "2011/04/1995-12-01samanthatorres.jpg", "2011/04/1996-01-01victoriaalynettefuller.jpg", "2011/04/1996-02-01konacarmack.jpg", "2011/04/1996-03-01priscillaleetaylor.jpg", "2011/04/1996-04-01gillianbonner.jpg", "2011/04/1996-05-01shaunasand.jpg", "2011/04/1996-06-01karintaylor.jpg", "2011/04/1996-07-01angelboris.jpg", "2011/04/1996-08-01jessicalee.jpg", "2011/04/1996-09-01jenniferallan.jpg", "2011/04/1996-10-01nadinechanz.jpg", "2011/04/1996-11-01ulrikaericsson.jpg", "2011/04/1996-12-01victoriasilvstedt.jpg", "2011/04/1997-01-01jamiferrell.jpg", "2011/04/1997-02-01kimberwest.jpg", "2011/04/1997-03-01jennifermiriam.jpg", "2011/04/1997-04-01kellymariemonaco.jpg", "2011/04/1997-05-01lynnthomas.jpg", "2011/04/1997-06-01carriestevens.jpg", "2011/04/1997-07-01daphneelynnduplaix.jpg", "2011/04/1997-08-01kalinolson.jpg", "2011/04/1997-09-01nikkischieler.jpg", "2011/04/1997-10-01laylaharvestroberts.jpg", "2011/04/1997-11-01ingadrozdova.jpg", "2011/04/1997-12-01karenmcdougal.jpg", "2011/04/1998-01-01heatherkozar.jpg", "2011/04/1998-02-01juliaschultz.jpg", "2011/04/1998-03-01marileceandrada.jpg", "2011/04/1998-04-01hollyjoanhart.jpg", "2011/04/1998-05-01deannabrooks.jpg", "2011/04/1998-06-01marialuisagil.jpg", "2011/04/1998-07-01lisadergan.jpg", "2011/04/1998-08-01angelalittle.jpg", "2011/04/1998-09-01vanessagleason.jpg", "2011/04/1998-10-01lauracover.jpg", "2011/04/1998-11-01tiffanytaylor.jpg", "2011/04/1998-12-01ericajaclynandnicoledahm.jpg", "2011/04/1999-01-01jaimebergman.jpg", "2011/04/1999-02-01stacymariefuson.jpg", "2011/04/1999-03-01alexandrialexiekarlsen.jpg", "2011/04/1999-04-01nataliasokolova.jpg", "2011/04/1999-05-01tisharaleecousino.jpg", "2011/04/1999-06-01kimberlyspicer.jpg", "2011/04/1999-07-01jenniferrovero.jpg", "2011/04/1999-08-01rebeccascott.jpg", "2011/04/1999-09-01kristicline.jpg", "2011/04/1999-10-01jodiannpaterson.jpg", "2011/04/1999-11-01carawakelin.jpg", "2011/04/1999-12-01brookerichards.jpg"
+        ]
     }
 ];
 var ImageSet = (function () {
@@ -19066,7 +19062,7 @@ var ImageSet = (function () {
     });
     ImageSet.prototype.getRandomImage = function () {
         var img = this.data.images[Math.floor(Math.random() * this.data.images.length)];
-        return 'http://crossorigin.me/' + this.data.baseUrl + img;
+        return this.data.baseUrl + img;
     };
     return ImageSet;
 }());
@@ -19278,19 +19274,25 @@ var Viewer = (function (_super) {
         });
     };
     Viewer.prototype.onGifSelected = function (src) {
-        this.setState({ gif: src });
-        this.loadImage(src, this.state.blueImage);
+        var newImage = this.state.imageSet.getRandomImage();
+        this.setState({
+            gif: src,
+            blueImage: newImage
+        });
+        this.loadImage(src, newImage);
     };
     Viewer.prototype.shuffle = function () {
         if (!this.state.blueGif)
             return;
-        var newImage = image_sets_1.imageSets[0].getRandomImage();
+        var newImage = this.state.imageSet.getRandomImage();
         this.setState({
             blueImage: newImage
         });
         this.loadImage(this.state.gif, newImage);
     };
-    Viewer.prototype.onImageSetChange = function () {
+    Viewer.prototype.onImageSetChange = function (newSet) {
+        var _this = this;
+        this.setState({ imageSet: newSet }, function () { return _this.shuffle(); });
     };
     Viewer.prototype.render = function () {
         var _this = this;

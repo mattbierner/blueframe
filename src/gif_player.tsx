@@ -8,33 +8,6 @@ import { Gif } from "./image_loader";
 import { BlueGif } from "./blueizer";
 import GifProperties from "./gif_properties";
 
-const playbackSpeeds: any = {
-    '1x speed': 1,
-    '2x speed': 2,
-    '4x speed': 4,
-    '8x speed': 8,
-    '1/2 speed': 0.5,
-    '1/4 speed': 0.25,
-    '1/8 speed': 0.125,
-};
-
-/**
- * Select playback speed.
- */
-class SpeedSelector extends React.Component<any, null> {
-    render() {
-        const options = Object.keys(playbackSpeeds).map(x =>
-            <option value={playbackSpeeds[x]} key={x}>{x}</option>);
-
-        return (
-            <div className='playback-speed-selector'>
-                <select value={this.props.value} onChange={this.props.onChange}>
-                    {options}
-                </select>
-            </div>
-        );
-    }
-}
 
 interface GifPlayerProps {
     blueGif: BlueGif | null
@@ -46,7 +19,6 @@ interface GifPlayerState {
     currentFrame: number
     playing: boolean
     loop: boolean
-    playbackSpeed: number
 }
 
 /**
@@ -58,8 +30,7 @@ export default class GifPlayer extends React.Component<GifPlayerProps, GifPlayer
         this.state = {
             currentFrame: 0,
             playing: false,
-            loop: true,
-            playbackSpeed: 1
+            loop: true
         }
     }
 
@@ -104,7 +75,7 @@ export default class GifPlayer extends React.Component<GifPlayerProps, GifPlayer
 
             nextFrame %= this.getNumFrames();
 
-            const interval = ((this.props.blueGif.frames[nextFrame].delay || 1) * 10) / this.state.playbackSpeed;
+            const interval = ((this.props.blueGif.frames[nextFrame].delay || 1) * 10)
             const elapsed = (Date.now() - start);
             const next = Math.max(0, interval - (elapsed - delay));
             this.setState({
@@ -114,18 +85,27 @@ export default class GifPlayer extends React.Component<GifPlayerProps, GifPlayer
         }, delay);
     }
 
-    onSliderChange(e: any) {
+    private onSliderChange(e: any) {
         const frame = +e.target.value % this.getNumFrames();
         this.setState({ currentFrame: frame });
     }
 
-    onReplay() {
+    private onReplay() {
         this.setState({ currentFrame: 0 });
     }
 
-    onPlaybackSpeedChange(e: any) {
-        const value = +e.target.value;
-        this.setState({ playbackSpeed: value });
+    private nextFrame() {
+        this.setState({
+            currentFrame: (this.state.currentFrame + 1) % this.props.blueGif.frames.length
+        })
+    }
+
+    private previousFrame() {
+        this.setState({
+            currentFrame: this.state.currentFrame - 1 < 0
+                ? this.props.blueGif.frames.length - 1
+                : (this.state.currentFrame - 1) % this.props.blueGif.frames.length
+        })
     }
 
     render() {
@@ -156,10 +136,15 @@ export default class GifPlayer extends React.Component<GifPlayerProps, GifPlayer
                         <button
                             className="material-icons"
                             onClick={this.onToggle.bind(this)}>{this.state.playing ? 'pause' : 'play_arrow'}</button>
-                        <SpeedSelector value={this.state.playbackSpeed} onChange={this.onPlaybackSpeedChange.bind(this)} />
+                        <button
+                            className="material-icons"
+                            onClick={this.previousFrame.bind(this)}>skip_previous</button>
+                        <button
+                            className="material-icons"
+                            onClick={this.nextFrame.bind(this)}>skip_next</button>
                     </div>
                 </div>
             </div>
-        );
+        )
     }
-};
+}

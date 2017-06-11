@@ -30,12 +30,12 @@ export function drawForOptions(
     context: CanvasRenderingContext2D,
     gif: BlueGif,
     mode: ScaleMode,
-    state: any
+    currentFrame: number
 ) {
     canvas.width = gif.width
     canvas.height = gif.height
 
-    const frame = gif.frames[state.currentFrame]
+    const frame = gif.frames[currentFrame]
 
     if (mode === scaleToFit) {
         context.drawImage(frame.canvas, 0, 0, canvas.width, canvas.height)
@@ -66,21 +66,22 @@ export default class GifRenderer extends React.Component<GifRendererProps, null>
     _canvas: any;
 
     componentDidMount() {
-        this._canvas = ReactDOM.findDOMNode(this);
-        this._ctx = this._canvas.getContext('2d');
+        this._canvas = ReactDOM.findDOMNode(this)
+        this._ctx = this._canvas.getContext('2d')
+        this.drawGifForOptions(this.props.gif, this.props)
     }
 
     componentWillReceiveProps(newProps: GifRendererProps) {
-        this.drawGifForOptions(newProps.gif, newProps);
+        this.drawGifForOptions(newProps.gif, newProps)
     }
 
-    drawGifForOptions(imageData: any, state: GifRendererProps) {
+    drawGifForOptions(imageData: any, props: GifRendererProps) {
         if (imageData) {
-            drawForOptions(this._canvas, this._ctx, imageData, this.props.scaleMode, state);
+            drawForOptions(this._canvas, this._ctx, imageData, props.scaleMode, props.currentFrame)
         }
     }
 
     render() {
-        return (<canvas className="gif-canvas" width="0" height="0" />);
+        return (<canvas className="gif-canvas" width="0" height="0" />)
     }
-};
+}

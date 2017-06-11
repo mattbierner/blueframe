@@ -112,10 +112,12 @@ const extractGifFrameData = (reader: any): any[] => {
 export const loadGif = (url: string): Promise<Gif> =>
     loadBinaryData(url).then(data => decodeGif(data, url));
 
-export const loadImage = (url: string): Promise<ImageFrame> =>
+export const loadImage = (url: string, coors: boolean = false): Promise<ImageFrame> =>
     new Promise((resolve, reject) => {
         const img = new Image()
-        img.crossOrigin = ''
+        if (coors) {
+            img.crossOrigin = ''
+        }
         img.addEventListener('load', () => {
             const width = img.naturalWidth
             const height = img.naturalHeight

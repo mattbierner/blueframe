@@ -105,23 +105,28 @@ class Viewer extends React.Component<null, ViewerState> {
     }
 
     private onGifSelected(src: string) {
-        this.setState({ gif: src })
-        this.loadImage(src, this.state.blueImage)
+        const newImage = this.state.imageSet.getRandomImage()
+        this.setState({
+            gif: src,
+            blueImage: newImage
+        })
+
+        this.loadImage(src, newImage)
     }
 
     private shuffle() {
         if (!this.state.blueGif)
             return
 
-        const newImage = imageSets[0].getRandomImage()
+        const newImage = this.state.imageSet.getRandomImage()
         this.setState({
             blueImage: newImage
         })
         this.loadImage(this.state.gif, newImage)
     }
 
-    private onImageSetChange() {
-
+    private onImageSetChange(newSet: ImageSet) {
+        this.setState({ imageSet: newSet }, () => this.shuffle())
     }
 
     render() {
