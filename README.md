@@ -1,3 +1,5 @@
+# WIP
+
 <div align="center">
     <div><img src="documentation/logo.png" /></div>
     <br>
@@ -5,7 +7,6 @@
 </div>
 
 * [Try it out][site]
-* [About and documentation][documentation]
 
 
 ## Building and Running
@@ -32,4 +33,3 @@ Main TypeScript code is in `src` and output to `dist` folder.
 
 
 [site]: https://mattbierner.github.io/blueframe/
-[documentation]: documentation/about.md

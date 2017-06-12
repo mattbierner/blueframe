@@ -97,7 +97,7 @@ class Viewer extends React.Component<null, ViewerState> {
 
     private onExport() {
         this.setState({ exporting: true })
-        exportGif(this.state.blueGif, this.state.scaleMode, this.state).then(blob => {
+        exportGif(this.state.blueGif, this.state.scaleMode).then(blob => {
             this.setState({ exporting: false })
             const url = URL.createObjectURL(blob)
             window.open(url)

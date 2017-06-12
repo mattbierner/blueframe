@@ -18659,14 +18659,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 exports.blueize = function (gif, image) {
     var frames = Array.from(gif.frames);
+    var blueFrame = undefined;
     if (gif.frames.length) {
-        var targetFrame = 1 + Math.floor(Math.random() * gif.frames.length);
-        frames.splice(targetFrame, 0, image);
+        blueFrame = 1 + Math.floor(Math.random() * gif.frames.length);
+        frames.splice(blueFrame, 0, image);
     }
     return {
+        image: image,
+        blueFrame: blueFrame,
+        frames: frames,
         width: gif.width,
-        height: gif.height,
-        frames: frames
+        height: gif.height
     };
 };
 
@@ -18679,11 +18682,9 @@ exports.blueize = function (gif, image) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var gif_renderer_1 = __webpack_require__(45);
+var image_loader_1 = __webpack_require__(119);
 var GifEncoder = __webpack_require__(144);
-/**
- *
- */
-exports.default = function (imageData, scaleMode, props) {
+var saveGif = function (imageData, scaleMode) {
     var gif = new GifEncoder(imageData.width, imageData.height);
     var canvas = document.createElement("canvas");
     var ctx = canvas.getContext("2d");
@@ -18699,13 +18700,31 @@ exports.default = function (imageData, scaleMode, props) {
     gif.writeHeader();
     setTimeout(function () {
         for (var i = 0; i < imageData.frames.length; ++i) {
-            gif_renderer_1.drawForOptions(canvas, ctx, imageData, scaleMode, Object.assign({ currentFrame: i }, props));
+            gif_renderer_1.drawForOptions(canvas, ctx, imageData, scaleMode, i);
             gif.setDelay(imageData.frames[i].delay * 10);
             gif.addFrame(ctx.getImageData(0, 0, imageData.width, imageData.height).data);
         }
         gif.finish();
     }, 0);
     return p;
+};
+exports.default = function (imageData, scaleMode) {
+    if (isNaN(imageData.blueFrame)) {
+        return saveGif(imageData, scaleMode);
+    }
+    // Load image using coors
+    return image_loader_1.loadImage('https://crossorigin.me/' + imageData.image.source, true).then(function (image) {
+        var frames = imageData.frames.concat();
+        frames[imageData.blueFrame] = image;
+        var blueGif = {
+            image: image,
+            frames: frames,
+            blueFrame: imageData.blueFrame,
+            width: imageData.width,
+            height: imageData.height
+        };
+        return saveGif(blueGif, scaleMode);
+    });
 };
 
 
@@ -19034,8 +19053,8 @@ var data = [
         ]
     },
     {
-        name: "Playboy centerfolds",
-        description: "Playboy centerfolds",
+        name: "Playboy",
+        description: "Playboy centerfolds from the 1950s - 2000",
         baseUrl: 'https://erotixx.files.wordpress.com/',
         images: [
             "2011/04/1953-12-01marilynmonroe1.jpg", "2011/04/1953-12-01marilynmonroe2.jpg", "2011/04/1954-01-01margieharrison.jpg", "2011/04/1954-01-01margieharrison1.jpg", "2011/04/1954-02-01margaretscott.jpg", "2011/04/1954-02-01margaretscott1.jpg", "2011/04/1954-03-01doloresdelmonte.jpg", "2011/04/1954-03-01doloresdelmonte1.jpg", "2011/04/1954-04-01marilynwaltz.jpg", "2011/04/1954-05-01joannearnold.jpg", "2011/04/1954-06-01margieharrison.jpg", "2011/04/1954-07-01nevagilbert.jpg", "2011/04/1954-07-01nevagilbert1.jpg", "2011/04/1954-08-01arlinehunter.jpg", "2011/04/1954-09-01jackierainbow.jpg", "2011/04/1954-10-01madelinecastle.jpg", "2011/04/1954-11-01dianehunter.jpg", "2011/04/1954-12-01terryryan.jpg", "2011/04/1955-01-01bettiepage.jpg", "2011/04/1955-02-01jaynemansfield.jpg", "2011/04/1955-03-01noplaymatethismonth.jpg", "2011/04/1955-04-01marilynwaltz.jpg", "2011/04/1955-05-01margueriteempey.jpg", "2011/04/1955-06-01evemeyer.jpg", "2011/04/1955-07-01janetpilgrim.jpg", "2011/04/1955-08-01patlawler.jpg", "2011/04/1955-09-01annefleming.jpg", "2011/04/1955-10-01jeanmoorehead.jpg", "2011/04/1955-11-01barbaracameron.jpg", "2011/04/1955-12-01janetpilgrim.jpg", "2011/04/1956-01-01lynnturner.jpg", "2011/04/1956-02-01margueriteempey.jpg", "2011/04/1956-03-01marianstafford.jpg", "2011/04/1956-04-01rustyfisher.jpg", "2011/04/1956-05-01marionscott.jpg", "2011/04/1956-06-01gloriawalker.jpg", "2011/04/1956-07-01alicedenham.jpg", "2011/04/1956-08-01jonnienicely.jpg", "2011/04/1956-09-01elsasorensen.jpg", "2011/04/1956-10-01janetpilgrim.jpg", "2011/04/1956-11-01bettyblue.jpg", "2011/04/1956-12-01lisawinters.jpg", "2011/04/1957-01-01juneblair.jpg", "2011/04/1957-02-01sallytodd.jpg", "2011/04/1957-03-01sandraedwards.jpg", "2011/04/1957-04-01gloriawindsor.jpg", "2011/04/1957-05-01dawnrichard.jpg", "2011/04/1957-06-01carrieradison.jpg", "2011/04/1957-07-01jeanjani.jpg", "2011/04/1957-08-01doloresdonlon.jpg", "2011/04/1957-09-01jacquelynprescott.jpg", "2011/04/1957-10-01colleenfarrington.jpg", "2011/04/1957-11-01marlenecallahan.jpg", "2011/04/1957-12-01lindavargas.jpg", "2011/04/1958-01-01elizabethannroberts.jpg", "2011/04/1958-02-01cherylkubert.jpg", "2011/04/1958-03-01zahranorbo.jpg", "2011/04/1958-04-01feliciaatkins.jpg", "2011/04/1958-05-01larilaine.jpg", "2011/04/1958-06-01judyleetomerlin.jpg", "2011/04/1958-07-01linnnanneteahlstrand.jpg", "2011/04/1958-08-01myrnaweber.jpg", "2011/04/1958-09-01terihope.jpg", "2011/04/1958-10-01maracorday.jpg", "2011/04/1958-10-15patsheehan.jpg", "2011/04/1958-11-01joanstaley.jpg", "2011/04/1958-12-01joycenizzari.jpg", "2011/04/1959-01-01virginiagordon.jpg", "2011/04/1959-02-01eleanorbradley.jpg", "2011/04/1959-03-01audreydaston.jpg", "2011/04/1959-04-01nancycrawford.jpg", "2011/04/1959-05-01cindyfuller.jpg", "2011/04/1959-06-01marilynhanold.jpg", "2011/04/1959-07-01yvettevickers.jpg", "2011/04/1959-08-01clayrepeters.jpg", "2011/04/1959-09-01mariannegaba.jpg", "2011/04/1959-10-01elainereynolds.jpg", "2011/04/1959-11-01donnalynn.jpg", "2011/04/1959-12-01ellenstratton.jpg",
@@ -19267,7 +19286,7 @@ var Viewer = (function (_super) {
     Viewer.prototype.onExport = function () {
         var _this = this;
         this.setState({ exporting: true });
-        gif_export_1.default(this.state.blueGif, this.state.scaleMode, this.state).then(function (blob) {
+        gif_export_1.default(this.state.blueGif, this.state.scaleMode).then(function (blob) {
             _this.setState({ exporting: false });
             var url = URL.createObjectURL(blob);
             window.open(url);
