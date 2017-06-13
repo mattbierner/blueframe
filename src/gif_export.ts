@@ -26,8 +26,8 @@ const saveGif = (imageData: BlueGif, scaleMode: ScaleMode) => {
     setTimeout(() => {
         for (let i = 0; i < imageData.frames.length; ++i) {
             drawForOptions(canvas, ctx, imageData, scaleMode, i)
-            gif.setDelay(imageData.frames[i].delay * 10)
             gif.addFrame(ctx.getImageData(0, 0, imageData.width, imageData.height).data)
+            gif.setDelay(imageData.frames[i].delay * 10)
         }
         gif.finish()
     }, 0)

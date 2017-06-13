@@ -34,7 +34,7 @@ export class ImageFrame extends Frame {
         width: number,
         height: number
     ) {
-        super(1, canvas, width, height);
+        super(0, canvas, width, height);
     }
 }
 

@@ -18701,8 +18701,8 @@ var saveGif = function (imageData, scaleMode) {
     setTimeout(function () {
         for (var i = 0; i < imageData.frames.length; ++i) {
             gif_renderer_1.drawForOptions(canvas, ctx, imageData, scaleMode, i);
-            gif.setDelay(imageData.frames[i].delay * 10);
             gif.addFrame(ctx.getImageData(0, 0, imageData.width, imageData.height).data);
+            gif.setDelay(imageData.frames[i].delay * 10);
         }
         gif.finish();
     }, 0);
@@ -18931,7 +18931,7 @@ exports.Frame = Frame;
 var ImageFrame = (function (_super) {
     __extends(ImageFrame, _super);
     function ImageFrame(source, canvas, width, height) {
-        var _this = _super.call(this, 1, canvas, width, height) || this;
+        var _this = _super.call(this, 0, canvas, width, height) || this;
         _this.source = source;
         return _this;
     }
