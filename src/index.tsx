@@ -32,7 +32,7 @@ class Viewer extends React.Component<null, ViewerState> {
     constructor(props: any) {
         super(props);
         this.state = {
-            gif: 'https://media3.giphy.com/media/SEO7ub2q1fORa/giphy.gif',
+            gif: 'https://media4.giphy.com/media/JIX9t2j0ZTN9S/giphy-downsized-medium.gif',
             blueImage: imageSets[0].getRandomImage(),
 
             gifImageData: null,
