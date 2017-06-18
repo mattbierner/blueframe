@@ -1,5 +1,3 @@
-# WIP
-
 <div align="center">
     <div><img src="documentation/logo.png" /></div>
     <br>
