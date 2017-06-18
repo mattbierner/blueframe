@@ -9,17 +9,17 @@ export interface ScaleMode {
 
 export const scaleToFit: ScaleMode = {
     name: 'Scale to Fit',
-    description: 'Scale additional gif to fit within the primary gif'
+    description: 'Scale image to fit within the gif'
 }
 
 export const scaleAndCrop: ScaleMode = {
     name: 'Scale and Crop',
-    description: 'Scale additional gif proportionally to cover the primary gif and then crop'
+    description: 'Scale image proportionally to cover the gif and then crop'
 }
 
 export const actualSize: ScaleMode = {
     name: 'Actual Size',
-    description: 'Draw each gif centered in the canvas at the actual size'
+    description: 'Draw image centered in the canvas at its actual size'
 }
 
 
