@@ -75,7 +75,7 @@ export default class GifPlayer extends React.Component<GifPlayerProps, GifPlayer
 
             nextFrame %= this.getNumFrames();
 
-            const interval = ((this.props.blueGif.frames[nextFrame].delay || 1) * 10)
+            const interval = ((this.props.blueGif.frames[nextFrame].delay || 3) * 10)
             const elapsed = (Date.now() - start);
             const next = Math.max(0, interval - (elapsed - delay));
             this.setState({
